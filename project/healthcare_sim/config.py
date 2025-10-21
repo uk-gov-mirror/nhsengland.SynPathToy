@@ -1,10 +1,13 @@
+import numpy as np
+import random
+
 NUM_PATIENTS = 10
 NUM_PATHWAYS = 10
 NUM_ACTIONS = 10
-NUM_STEPS = 30
+NUM_STEPS = 365
 BASE_CAPACITY = 10
 AGE_THRESHOLD = 60
-PROBABILITY_OF_DISEASE = 0.15
+PROBABILITY_OF_DISEASE = 0.075
 
 # --- Ideal clinical values ---
 IDEAL_CLINICAL_VALUES = {
@@ -18,10 +21,10 @@ IDEAL_CLINICAL_VALUES = {
 INPUT_ACTIONS = ['a0', 'a1']  # Two standard input actions
 OUTPUT_ACTIONS = 'a9'       # Standard output action
 
-#np.random.seed(0)
-#random.seed(0)
+np.random.seed(42)
+random.seed(42)
 
 # --- Q-learning parameters ---
 ALPHA = 0.1  # Learning rate
 GAMMA = 0.9  # Discount factor
-EPSILON = 0.1  # Exploration rate
+EPSILON = 0.2  # Exploration rate
