@@ -70,4 +70,4 @@ def initialize_simulation(Action, Pathway, NUM_PATIENTS=100, NUM_PATHWAYS=10, NU
 
     pathways = [Pathway(f'P{i}', transition_matrix, threshold_matrix) for i in range(NUM_PATHWAYS)]
     
-    return actions, pathways, threshold_matrix, transition_matrix
+    return actions, pathways, transition_matrix

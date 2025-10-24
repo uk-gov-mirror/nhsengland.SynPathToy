@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from healthcare_sim.config import NUM_STEPS, ALPHA, GAMMA
+from healthcare_sim.config import NUM_STEPS
 import copy
 
 """
@@ -19,7 +19,7 @@ determines their next actions based on predefined pathways, and executes those a
 
 """
 def run_simulation(Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_ACTIONS, PROBABILITY_OF_DISEASE,
-        NUM_PATHWAYS, NUM_STEPS, ALPHA, GAMMA, EPSILON, IDEAL_CLINICAL_VALUES):
+        NUM_PATHWAYS, NUM_STEPS, IDEAL_CLINICAL_VALUES):
     from healthcare_sim.action import Action
     import time
     
@@ -27,24 +27,20 @@ def run_simulation(Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_A
     pathways_major = {}
     system_cost_major = {}
     activity_log_major = {}  
-    q_threshold_rewards_major = {}
-    q_table_major = {}
-    q_value_history = []
     clinical_penalty_history = []
     queue_length_history = []
+    
     print("Running simulation...")
     start_time = time.time()
+    
     for major_step in range(2):  # Major step loop, can be expanded for multiple iterations
         system_cost = {}
         sum_cost = 0
         activity_log = []
-        q_table = defaultdict(lambda: defaultdict(float))
         for p in patients:
             p.diseases = {f'P{p}': False for p in range(NUM_PATHWAYS)}
         for step in range(NUM_STEPS):
             step_cost = 0
-            q_state_action_pairs = []
-            q_threshold_rewards = []
             rewards = []
             for act in actions.values():
                 act.update_capacity(step)
@@ -56,9 +52,7 @@ def run_simulation(Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_A
                     Patient.clinical_decay(p, IDEAL_CLINICAL_VALUES) # Patient gets a little worse per pathway they are on
                     for act in actions.values():
                         system_state = int(sum(len(act.queue) for act in actions.values())) # Calculate the total queue
-                    EPSILON = EPSILON * 0.99**step  # Decay epsilon over time
-                    next_a, q_state = pw.next_action(p,  actions, q_table, EPSILON, major_step, step, activity_log, system_state)
-                    q_state_action_pairs.append((q_state, next_a))
+                    next_a = pw.next_action(p,  actions, major_step, step, activity_log, system_state)
                     if next_a == OUTPUT_ACTIONS:
                         if pw.name in p.diseases:
                             p.diseases[pw.name] = False # Remove disease flag as pathway finished
@@ -67,17 +61,13 @@ def run_simulation(Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_A
                     action_cost = actions[next_a].cost if next_a in actions else 0
                     reward = - 0.25 * action_cost - 0.5 * clinical_penalty - 0.0001 * queue_penalty - 0.5 * system_state
                     rewards.append(reward)
-                    q_threshold_rewards.append((pw.name, next_a, reward))
-                    for (q_state, next_a), reward in zip(q_state_action_pairs, rewards):
-                        q_table[q_state][next_a] += ALPHA * (reward + GAMMA * max(q_table[q_state].values()) - q_table[q_state][next_a])
                     
-                    avg_q_value = np.mean([max(q_table[s].values()) for s in q_table if q_table[s]])
                     avg_clinical_penalty = np.mean([p.outcomes['clinical_penalty'] for p in patients])
                     avg_queue_length = np.mean([len(act.queue) for act in actions.values()])
 
-                    q_value_history.append(avg_q_value)
                     clinical_penalty_history.append(avg_clinical_penalty)
                     queue_length_history.append(avg_queue_length)
+
             for act in actions.values():
                 in_progress, cost = act.execute(IDEAL_CLINICAL_VALUES)
                 step_cost += cost
@@ -88,11 +78,9 @@ def run_simulation(Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_A
         pathways_major[major_step] = copy.deepcopy(pathways)
         system_cost_major[major_step] = copy.deepcopy(system_cost)
         activity_log_major[major_step] = copy.deepcopy(activity_log)
-        q_threshold_rewards_major[major_step] = copy.deepcopy(q_threshold_rewards)
-        q_table_major[major_step] = copy.deepcopy(q_table)
         for act in actions.values():
             act.reset()  # Reset each Action object for the next major step
     end_time = time.time()
     print(f"Run completed in {end_time - start_time:.2f} seconds")        
-    return actions_major, pathways_major, system_cost_major, q_threshold_rewards_major, activity_log_major, q_table_major, q_value_history, clinical_penalty_history, queue_length_history
+    return actions_major, pathways_major, system_cost_major, activity_log_major, clinical_penalty_history, queue_length_history
             

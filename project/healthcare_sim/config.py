@@ -20,8 +20,3 @@ OUTPUT_ACTIONS = 'a9'       # Standard output action
 
 #np.random.seed(0)
 #random.seed(0)
-
-# --- Q-learning parameters ---
-ALPHA = 0.1  # Learning rate
-GAMMA = 0.9  # Discount factor
-EPSILON = 0.1  # Exploration rate

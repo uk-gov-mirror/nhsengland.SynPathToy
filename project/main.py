@@ -14,7 +14,6 @@ from healthcare_sim import (
     config,
     initialize_patients,
     initialize_simulation,
-    vis_action_q,
     vis_heatmaps,
     vis_penalty,
     vis_activity,
@@ -22,9 +21,6 @@ from healthcare_sim import (
     vis_change,
     vis_sankey,
     vis_net,
-    vis_qstate,
-    vis_qstate2,
-    vis_qstate3
 )
 
 #np.random.seed(0)
@@ -40,13 +36,10 @@ PROBABILITY_OF_DISEASE = config.PROBABILITY_OF_DISEASE
 IDEAL_CLINICAL_VALUES = config.IDEAL_CLINICAL_VALUES
 INPUT_ACTIONS = config.INPUT_ACTIONS
 OUTPUT_ACTIONS = config.OUTPUT_ACTIONS
-ALPHA = config.ALPHA
-GAMMA = config.GAMMA
-EPSILON = config.EPSILON
 
 def build_simulation(): 
     # Step 2: call patient, action and pathway classes to create instances
-    actions, pathways, threshold_matrix, transition_matrix = initialize_simulation(Action, Pathway, NUM_PATIENTS, NUM_PATHWAYS, NUM_ACTIONS, BASE_CAPACITY, IDEAL_CLINICAL_VALUES, PROBABILITY_OF_DISEASE, INPUT_ACTIONS, OUTPUT_ACTIONS)
+    actions, pathways, transition_matrix = initialize_simulation(Action, Pathway, NUM_PATIENTS, NUM_PATHWAYS, NUM_ACTIONS, BASE_CAPACITY, IDEAL_CLINICAL_VALUES, PROBABILITY_OF_DISEASE, INPUT_ACTIONS, OUTPUT_ACTIONS)
     patients = initialize_patients(Patient, NUM_PATHWAYS, IDEAL_CLINICAL_VALUES, NUM_PATIENTS)
     
     print(NUM_PATIENTS, "patients created.")
@@ -76,25 +69,21 @@ def build_simulation():
     
     # Step 4: run the simulation
     print("Starting simulation...")
-    actions_major, pathways_major, system_cost_major, q_threshold_rewards_major, activity_log_major, q_table_major, q_value_history, clinical_penalty_history, queue_length_history = run_simulation(
+    actions_major, pathways_major, system_cost_major, activity_log_major, clinical_penalty_history, queue_length_history = run_simulation(
         Patient, patients, pathways, actions, OUTPUT_ACTIONS, INPUT_ACTIONS, PROBABILITY_OF_DISEASE,
-        NUM_PATHWAYS, NUM_STEPS, ALPHA, GAMMA, EPSILON, IDEAL_CLINICAL_VALUES
+        NUM_PATHWAYS, NUM_STEPS, IDEAL_CLINICAL_VALUES
     )
     
     # Step 5: Visualisae results
     first_major_step = min(actions_major.keys())
     last_major_step = max(actions_major.keys())
 
-    vis_action_q(actions_major,first_major_step,last_major_step)
     vis_heatmaps(actions_major,first_major_step,last_major_step)
     vis_penalty(patients)
     vis_activity(actions_major, first_major_step, last_major_step)
     vis_learning(system_cost_major, first_major_step, last_major_step)
     vis_change(transition_matrix, actions_major, first_major_step, last_major_step)
     vis_sankey(activity_log_major[last_major_step])
-    vis_qstate(q_table_major[last_major_step])
-    vis_qstate2(q_table_major[last_major_step], q_table_major, first_major_step)
-    vis_qstate3(q_value_history, clinical_penalty_history, queue_length_history)
 
     print("Total system cost:", sum(system_cost_major[last_major_step].values()))
     print("Average queue penalty:", np.mean([p.outcomes['queue_penalty'] for p in patients]))
